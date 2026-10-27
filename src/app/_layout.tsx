@@ -17,13 +17,13 @@ export default function RootLayout() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        if (user.emailVerified) {
+        if (user.emailVerified || user.phoneNumber) {
           router.replace('/(tabs)');
         } else {
           router.replace('/verify-email');
         }
       } else {
-        router.replace('/login');
+        router.replace('/welcome');
       }
     });
     return unsubscribe;
@@ -34,7 +34,9 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AnimatedSplashOverlay />
         <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="welcome" />
           <Stack.Screen name="login" />
+          <Stack.Screen name="phone-login" />
           <Stack.Screen name="verify-email" />
           <Stack.Screen name="(tabs)" />
         </Stack>

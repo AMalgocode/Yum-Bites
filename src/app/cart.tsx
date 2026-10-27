@@ -1,95 +1,162 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '@/context/cart-context';
-import { colors } from '@/constants/colors';
+
+const COLORS = {
+  background: '#FDF8EF',
+  primary: '#D0300F',
+  title: '#1F1510',
+  text: '#2E3440',
+  muted: '#7A7F87',
+  card: '#FFFDF9',
+  divider: '#EFE8DA',
+  chip: '#FCEBD5',
+  white: '#FFFFFF',
+};
 
 export default function CartScreen() {
+  const router = useRouter();
   const { items, increaseQuantity, decreaseQuantity, totalPrice, clearCart } = useCart();
+
+  const handleClear = () => {
+    Alert.alert('Clear cart?', 'This removes all items from your cart.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear', style: 'destructive', onPress: clearCart },
+    ]);
+  };
+
+  const Header = (
+    <View style={styles.header}>
+      <Pressable style={styles.headerSide} onPress={() => router.back()} hitSlop={10}>
+        <Ionicons name="arrow-back" size={28} color={COLORS.title} />
+      </Pressable>
+      <Text style={styles.title}>Your Cart</Text>
+      <View style={styles.headerSide} />
+    </View>
+  );
 
   if (items.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.headerText}>Your Cart</Text>
-        <Text style={styles.emptyText}>Your cart is empty</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Browse Food Centers</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        {Header}
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyEmoji}>🛒</Text>
+          <Text style={styles.emptyTitle}>Your cart is empty</Text>
+          <Text style={styles.emptyText}>Add something tasty from a food center.</Text>
+          <Pressable style={styles.browseButton} onPress={() => router.replace('/(tabs)')}>
+            <Text style={styles.browseText}>Browse Food Centers</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerText}>Your Cart</Text>
+    <SafeAreaView style={styles.safe}>
+      {Header}
 
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <View style={styles.itemRow}>
+          <View style={styles.itemCard}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+            </View>
+
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemRestaurant}>{item.restaurantName}</Text>
+              <Text style={styles.itemPlace}>{item.restaurantName}</Text>
               <Text style={styles.itemPrice}>₹{item.price} each</Text>
             </View>
-            <View style={styles.quantityControls}>
-              <TouchableOpacity style={styles.qtyButton} onPress={() => decreaseQuantity(item.id)}>
-                <Text style={styles.qtyButtonText}>-</Text>
-              </TouchableOpacity>
+
+            <View style={styles.qtyBox}>
+              <Pressable style={styles.qtyButton} onPress={() => decreaseQuantity(item.id)} hitSlop={8}>
+                <Ionicons name="remove" size={20} color={COLORS.white} />
+              </Pressable>
               <Text style={styles.qtyText}>{item.quantity}</Text>
-              <TouchableOpacity style={styles.qtyButton} onPress={() => increaseQuantity(item.id)}>
-                <Text style={styles.qtyButtonText}>+</Text>
-              </TouchableOpacity>
+              <Pressable style={styles.qtyButton} onPress={() => increaseQuantity(item.id)} hitSlop={8}>
+                <Ionicons name="add" size={20} color={COLORS.white} />
+              </Pressable>
             </View>
           </View>
         )}
       />
 
+      {/* Footer with total and checkout */}
       <View style={styles.footer}>
-        <Text style={styles.totalText}>Total: ₹{totalPrice}</Text>
-        <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
-          <Text style={styles.clearButtonText}>Clear Cart</Text>
-        </TouchableOpacity>
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalValue}>₹{totalPrice}</Text>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.checkoutButton, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push('/review-order')}>
+          <Text style={styles.checkoutText}>Proceed to Checkout · ₹{totalPrice}</Text>
+        </Pressable>
+
+        <Pressable style={styles.clearButton} onPress={handleClear} hitSlop={8}>
+          <Text style={styles.clearText}>Clear Cart</Text>
+        </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, paddingTop: 60, paddingHorizontal: 20 },
-  headerText: { fontSize: 20, fontWeight: 'bold', color: colors.textPrimary, marginBottom: 20 },
-  emptyText: { color: colors.textSecondary, fontSize: 16, marginTop: 40, textAlign: 'center' },
-  backButton: { backgroundColor: colors.primary, padding: 14, borderRadius: 10, marginTop: 24, alignItems: 'center' },
-  backButtonText: { color: colors.surface, fontWeight: '600' },
-  listContent: { gap: 12, paddingBottom: 20 },
-  itemRow: {
+  safe: { flex: 1, backgroundColor: COLORS.background },
+
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16 },
+  headerSide: { width: 30 },
+  title: { fontSize: 24, fontWeight: '700', color: COLORS.title },
+
+  list: { paddingHorizontal: 20, paddingBottom: 20 },
+  itemCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: COLORS.divider,
+    padding: 14,
+    marginBottom: 12,
   },
-  itemInfo: { flex: 1 },
-  itemName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
-  itemRestaurant: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
-  itemPrice: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
-  quantityControls: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  qtyButton: {
-    backgroundColor: colors.primary,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.chip, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 24, fontWeight: '800', color: COLORS.primary },
+  itemInfo: { flex: 1, marginLeft: 14 },
+  itemName: { fontSize: 18, fontWeight: '700', color: COLORS.title },
+  itemPlace: { fontSize: 14, color: COLORS.muted, marginTop: 2 },
+  itemPrice: { fontSize: 15, color: COLORS.text, marginTop: 4 },
+
+  qtyBox: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  qtyButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  qtyText: { fontSize: 18, fontWeight: '700', color: COLORS.title, minWidth: 22, textAlign: 'center' },
+
+  footer: {
+    backgroundColor: COLORS.card,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.divider,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  qtyButtonText: { color: colors.surface, fontSize: 18, fontWeight: 'bold' },
-  qtyText: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', minWidth: 20, textAlign: 'center' },
-  footer: { borderTopWidth: 1, borderTopColor: colors.border, paddingVertical: 20 },
-  totalText: { color: colors.textPrimary, fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  clearButton: { backgroundColor: colors.outOfStock, padding: 14, borderRadius: 10, alignItems: 'center' },
-  clearButtonText: { color: colors.surface, fontWeight: '600' },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  totalLabel: { fontSize: 20, fontWeight: '700', color: COLORS.title },
+  totalValue: { fontSize: 26, fontWeight: '800', color: COLORS.primary },
+  checkoutButton: { backgroundColor: COLORS.primary, borderRadius: 16, alignItems: 'center', paddingVertical: 18 },
+  checkoutText: { color: COLORS.white, fontSize: 20, fontWeight: '700' },
+  clearButton: { alignItems: 'center', paddingVertical: 14 },
+  clearText: { color: COLORS.muted, fontSize: 16, fontWeight: '600' },
+
+  emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
+  emptyEmoji: { fontSize: 72 },
+  emptyTitle: { fontSize: 22, fontWeight: '700', color: COLORS.title, marginTop: 12 },
+  emptyText: { fontSize: 16, color: COLORS.muted, marginTop: 6, textAlign: 'center' },
+  browseButton: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 28, marginTop: 24 },
+  browseText: { color: COLORS.white, fontSize: 18, fontWeight: '700' },
 });

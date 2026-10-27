@@ -1,27 +1,25 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { sendEmailVerification, signOut } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
 import { colors } from '@/constants/colors';
 
 export default function VerifyEmail() {
-  const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
 
-  const handleCheckVerified = async () => {
-    setChecking(true);
-    try {
-      await auth.currentUser?.reload();
-      if (auth.currentUser?.emailVerified) {
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!auth.currentUser) return;
+      await auth.currentUser.reload();
+      if (auth.currentUser.emailVerified) {
+        clearInterval(interval);
         router.replace('/(tabs)');
-      } else {
-        Alert.alert('Not verified yet', 'Please click the link in your email first.');
       }
-    } finally {
-      setChecking(false);
-    }
-  };
+    }, 3000); // checks every 3 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleResend = async () => {
     setResending(true);
@@ -46,13 +44,14 @@ export default function VerifyEmail() {
     <View style={styles.container}>
       <Text style={styles.title}>Verify Your Email</Text>
       <Text style={styles.subtitle}>
-        We sent a verification link to {auth.currentUser?.email}. Please check your inbox (and spam
-        folder) and click the link.
+        We sent a verification link to {auth.currentUser?.email}. Please check your inbox (and
+        spam folder) and click the link.
       </Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleCheckVerified} disabled={checking}>
-        <Text style={styles.buttonText}>{checking ? 'Checking...' : "I've verified my email"}</Text>
-      </TouchableOpacity>
+      <View style={styles.waitingBox}>
+        <ActivityIndicator color={colors.primary} size="small" />
+        <Text style={styles.waitingText}>Waiting for verification...</Text>
+      </View>
 
       <TouchableOpacity style={styles.secondaryButton} onPress={handleResend} disabled={resending}>
         <Text style={styles.secondaryButtonText}>
@@ -70,9 +69,18 @@ export default function VerifyEmail() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.background },
   title: { fontSize: 22, fontWeight: 'bold', color: colors.textPrimary, textAlign: 'center', marginBottom: 16 },
-  subtitle: { color: colors.textSecondary, textAlign: 'center', marginBottom: 32, lineHeight: 20 },
-  button: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center', marginBottom: 12 },
-  buttonText: { color: colors.surface, fontWeight: '600', fontSize: 16 },
+  subtitle: { color: colors.textSecondary, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  waitingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 28,
+  },
+  waitingText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
   secondaryButton: {
     borderWidth: 1,
     borderColor: colors.primary,

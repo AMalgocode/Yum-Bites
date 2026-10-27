@@ -1,72 +1,117 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { router } from 'expo-router';
-import { colors } from '@/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth } from '../../../firebaseConfig';
 
-const foodCenters = [
-  { id: 'ccd', name: 'CCD', fullName: 'Coffee Cafe Day', tagline: 'Fast food, coffee & tea varieties' },
-  { id: 'nescafe', name: 'Nescafe', fullName: 'Nescafe Corner', tagline: 'Maggi, pasta, fried rice & more' },
-  { id: 'canteen', name: 'Campus Canteen', fullName: 'Campus Canteen', tagline: 'Biryani, boiled egg & home-style food' },
+const COLORS = {
+  background: '#FEF6EA',
+  card: '#FCE4C4',
+  primary: '#D62A0C',
+  title: '#2A1710',
+  text: '#3F3A36',
+  plate: '#FFFBF4',
+  white: '#FFFFFF',
+};
+
+// Change the ids if your menu page (menu/[center].tsx) expects different values.
+const CENTERS = [
+  { id: 'food-court', name: 'Food Court', tagline: 'Fresh meals for your campus day.', emoji: '🍛' },
+  { id: 'ccd', name: 'CCD', tagline: 'Coffee that makes your day better.', emoji: '☕' },
+  { id: 'panda-junction', name: 'Panda Junction', tagline: 'Snacks & quick bites for you.', emoji: '🥯' },
+  { id: 'nescafe', name: 'Nescafé', tagline: 'Pasta, Momos & more delicious bites.', emoji: '🍝' },
 ];
 
-export default function ChooseFoodCenter() {
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.welcomeText}>Welcome to Yum Bites</Text>
-      <Text style={styles.subText}>Choose your food and have fun</Text>
+export default function HomeScreen() {
+  const router = useRouter();
 
-      <View style={styles.cardsWrapper}>
-        {foodCenters.map((center) => (
-          <TouchableOpacity
-            key={center.id}
-            style={styles.card}
-            onPress={() => router.push({ pathname: '/menu/[center]', params: { center: center.id } })}
-            activeOpacity={0.8}
-          >
-            <View style={styles.cardIconCircle}>
-              <Text style={styles.cardIconText}>{center.name.charAt(0)}</Text>
+  // Uses the name saved at sign-up. Falls back to "Student".
+  const firstName = auth.currentUser?.displayName?.trim().split(' ')[0] || 'Student';
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          <Pressable hitSlop={10} onPress={() => Alert.alert('Menu', 'Side menu is not set up yet.')}>
+            <Ionicons name="menu" size={34} color={COLORS.title} />
+          </Pressable>
+          <Pressable hitSlop={10} onPress={() => Alert.alert('Notifications', 'No new notifications.')}>
+            <Ionicons name="notifications-outline" size={30} color={COLORS.title} />
+          </Pressable>
+        </View>
+
+        <Text style={styles.hello}>Hello, {firstName} 👋</Text>
+        <Text style={styles.question}>What would you like to eat?</Text>
+
+        {/* Food centers */}
+        {CENTERS.map((c) => (
+          <Pressable
+            key={c.id}
+            style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+            onPress={() => router.push({ pathname: '/menu/[center]', params: { center: c.id } })}>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>{c.name}</Text>
+              <Text style={styles.cardTagline}>{c.tagline}</Text>
             </View>
-            <View style={styles.cardTextWrapper}>
-              <Text style={styles.cardName}>{center.fullName}</Text>
-              <Text style={styles.cardTagline}>{center.tagline}</Text>
+
+            <View style={styles.plate}>
+              <Text style={styles.emoji}>{c.emoji}</Text>
             </View>
-          </TouchableOpacity>
+
+            <View style={styles.arrow}>
+              <Ionicons name="chevron-forward" size={24} color={COLORS.white} />
+            </View>
+          </Pressable>
         ))}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 20, paddingTop: 60 },
-  welcomeText: { fontSize: 24, fontWeight: 'bold', color: colors.textPrimary, textAlign: 'center' },
-  subText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 6, marginBottom: 32 },
-  cardsWrapper: { gap: 16 },
+  safe: { flex: 1, backgroundColor: COLORS.background },
+  container: { paddingHorizontal: 18, paddingBottom: 120 },
+
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 22 },
+
+  hello: { fontSize: 28, fontWeight: '800', color: COLORS.title },
+  question: { fontSize: 20, color: COLORS.text, marginTop: 6, marginBottom: 22 },
+
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardIconCircle: {
-    width: 52,
-    height: 52,
+    backgroundColor: COLORS.card,
     borderRadius: 26,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
+    height: 150,
+    paddingLeft: 24,
+    marginBottom: 16,
+    overflow: 'hidden',
   },
-  cardIconText: { color: colors.surface, fontSize: 20, fontWeight: 'bold' },
-  cardTextWrapper: { flex: 1 },
-  cardName: { color: colors.textPrimary, fontSize: 17, fontWeight: '600' },
-  cardTagline: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
+  cardText: { flex: 1, paddingRight: 8 },
+  cardTitle: { fontSize: 25, fontWeight: '800', color: COLORS.title, marginBottom: 8 },
+  cardTagline: { fontSize: 17, color: COLORS.text, lineHeight: 25 },
+
+  plate: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: COLORS.plate,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -14,
+  },
+  emoji: { fontSize: 70 },
+
+  arrow: {
+    position: 'absolute',
+    right: 12,
+    bottom: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
